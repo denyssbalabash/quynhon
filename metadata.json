@@ -1,0 +1,8 @@
+{
+  "name": "Remix Incubator Intake Form",
+  "description": "High-conversion Telegram Mini App intake form with conditional branching, Apple-inspired aesthetics, and direct Telegram Bot API submission.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
