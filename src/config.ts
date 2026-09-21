@@ -21,8 +21,8 @@ export const INCUBATOR_CONFIG = {
   // Укажите токен бота и chat ID вашего канала/админа прямо здесь или через VITE_ переменные:
   // Если указаны botToken и adminChatId, форма напрямую отправит красивый отчет в Telegram из браузера!
   telegram: {
-    botToken: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_BOT_TOKEN) || '',
-    adminChatId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_ADMIN_CHAT_ID) || '',
+    botToken: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_BOT_TOKEN) || '8805681503:AAG0zo-_RoxfqPQ6-LMJscnJDOH8pYSOB4A',
+    adminChatId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_ADMIN_CHAT_ID) || '-1003927235033',
   },
 
   // URL бэкенда для отправки заявок (если используется сервер).

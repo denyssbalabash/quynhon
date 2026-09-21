@@ -313,28 +313,36 @@ export default function App() {
       const directAdminChatId = INCUBATOR_CONFIG.telegram?.adminChatId?.trim();
 
       if (directBotToken && directAdminChatId) {
-        const cleanIncubator = INCUBATOR_CONFIG.name;
-        const cleanEmail = formData.email || 'Not provided';
-        const cleanGoal = formData.goal || 'N/A';
+        const escapeHtml = (text: string) => {
+          if (!text) return '';
+          return String(text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        };
+
+        const cleanIncubator = escapeHtml(INCUBATOR_CONFIG.name);
+        const cleanEmail = escapeHtml(formData.email || 'Not provided');
+        const cleanGoal = escapeHtml(formData.goal || 'N/A');
         const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
 
-        let md = `🚀 *НОВАЯ ЗАЯВКА В ИНКУБАТОР* (${cleanIncubator})\n`;
-        md += `━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
-        md += `📋 *КОНТАКТНЫЕ ДАННЫЕ*\n`;
-        md += `• *Email:* ${cleanEmail}\n`;
+        let html = `🚀 <b>НОВАЯ ЗАЯВКА В ИНКУБАТОР</b> (${cleanIncubator})\n`;
+        html += `━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        html += `📋 <b>КОНТАКТНЫЕ ДАННЫЕ</b>\n`;
+        html += `• <b>Email:</b> ${cleanEmail}\n`;
 
         if (isTMA && tmaUser) {
-          md += `• *Источник:* 📱 Telegram Mini App (TMA)\n`;
+          html += `• <b>Источник:</b> 📱 Telegram Mini App (TMA)\n`;
           const fullName = [tmaUser.first_name, tmaUser.last_name].filter(Boolean).join(' ');
-          if (fullName) md += `• *TG Имя:* ${fullName}\n`;
-          if (tmaUser.username) md += `• *TG Username:* @${tmaUser.username}\n`;
-          md += `• *Telegram ID:* \`${tmaUser.id || 'N/A'}\`\n`;
-          if (tmaUser.language_code) md += `• *Язык клиента:* ${tmaUser.language_code}\n`;
+          if (fullName) html += `• <b>TG Имя:</b> ${escapeHtml(fullName)}\n`;
+          if (tmaUser.username) html += `• <b>TG Username:</b> @${escapeHtml(tmaUser.username)}\n`;
+          html += `• <b>Telegram ID:</b> <code>${escapeHtml(String(tmaUser.id || 'N/A'))}</code>\n`;
+          if (tmaUser.language_code) html += `• <b>Язык клиента:</b> ${escapeHtml(tmaUser.language_code)}\n`;
         } else {
-          md += `• *Источник:* 🌐 Статический веб-сайт (GitHub Pages / Web)\n`;
+          html += `• <b>Источник:</b> 🌐 Статический веб-сайт (GitHub Pages / Web)\n`;
         }
 
-        md += `• *Цель:* ${cleanGoal}\n\n`;
+        html += `• <b>Цель:</b> ${cleanGoal}\n\n`;
 
         if (formData.goal === 'Pitch my startup' || formData.goal === 'Both (Have a startup, ready to work part-time)') {
           const cat = formData.startupCategory === 'Other' && formData.startupCategoryOther
@@ -342,32 +350,32 @@ export default function App() {
             : formData.startupCategory;
 
           const needsStr = formData.startupNeeds.length > 0 ? formData.startupNeeds.join(', ') : 'None specified';
-          md += `🏢 *СТАРТАП-ПРОЕКТ*\n`;
-          md += `• *Категория:* ${cat || 'N/A'}\n`;
-          md += `• *Стадия:* ${formData.startupStage || 'N/A'}\n`;
-          md += `• *Проблема и решение:*\n  _${formData.startupProblem || 'N/A'}_\n`;
-          md += `• *Стек технологий:* ${formData.startupTechStack || 'N/A'}\n`;
-          md += `• *Что нужно от инкубатора:* ${needsStr}\n\n`;
+          html += `🏢 <b>СТАРТАП-ПРОЕКТ</b>\n`;
+          html += `• <b>Категория:</b> ${escapeHtml(cat || 'N/A')}\n`;
+          html += `• <b>Стадия:</b> ${escapeHtml(formData.startupStage || 'N/A')}\n`;
+          html += `• <b>Проблема и решение:</b>\n  <i>${escapeHtml(formData.startupProblem || 'N/A')}</i>\n`;
+          html += `• <b>Стек технологий:</b> ${escapeHtml(formData.startupTechStack || 'N/A')}\n`;
+          html += `• <b>Что нужно от инкубатора:</b> ${escapeHtml(needsStr)}\n\n`;
         }
 
         if (formData.goal === 'Looking for a job' || formData.goal === 'Both (Have a startup, ready to work part-time)') {
-          md += `💼 *СПЕЦИАЛИСТ / СОИСКАТЕЛЬ*\n`;
-          md += `• *Основной навык:* ${formData.jobSkill || 'N/A'}\n`;
-          md += `• *Ожидаемая компенсация:* ${formData.jobCompensation || 'N/A'}\n`;
-          md += `• *Формат и локация:* ${formData.jobAvailability || 'N/A'}\n`;
-          md += `• *Резюме / Портфолио:* ${formData.jobPortfolioUrl || 'Not provided'}\n\n`;
+          html += `💼 <b>СПЕЦИАЛИСТ / СОИСКАТЕЛЬ</b>\n`;
+          html += `• <b>Основной навык:</b> ${escapeHtml(formData.jobSkill || 'N/A')}\n`;
+          html += `• <b>Ожидаемая компенсация:</b> ${escapeHtml(formData.jobCompensation || 'N/A')}\n`;
+          html += `• <b>Формат и локация:</b> ${escapeHtml(formData.jobAvailability || 'N/A')}\n`;
+          html += `• <b>Резюме / Портфолио:</b> ${escapeHtml(formData.jobPortfolioUrl || 'Not provided')}\n\n`;
         }
 
-        md += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
-        md += `📅 *Время:* \`${timestamp}\``;
+        html += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        html += `📅 <b>Время:</b> <code>${timestamp}</code>`;
 
         const tgRes = await fetch(`https://api.telegram.org/bot${directBotToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: directAdminChatId,
-            text: md,
-            parse_mode: 'Markdown',
+            text: html,
+            parse_mode: 'HTML',
           }),
         });
 
