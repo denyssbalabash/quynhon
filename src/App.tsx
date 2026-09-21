@@ -23,6 +23,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { INCUBATOR_CONFIG } from './config';
+import incubatorLogoAsset from './file_000000007cb481fa9d1d5da3bfff24d4.png';
 import {
   TRANSLATIONS,
   detectLanguage,
@@ -285,7 +286,7 @@ export default function App() {
     }
   };
 
-  // Submit form: sends to backend which forwards to Telegram and hello@vuonqn.site
+  // Submit form: sends to backend or directly to Telegram Bot API if running without backend
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
@@ -306,6 +307,81 @@ export default function App() {
     };
 
     try {
+      // 1. If Telegram Bot Token & Admin Chat ID are set in INCUBATOR_CONFIG.telegram,
+      // dispatch directly to Telegram Bot API (perfect for serverless GitHub Pages without backend!)
+      const directBotToken = INCUBATOR_CONFIG.telegram?.botToken?.trim();
+      const directAdminChatId = INCUBATOR_CONFIG.telegram?.adminChatId?.trim();
+
+      if (directBotToken && directAdminChatId) {
+        const cleanIncubator = INCUBATOR_CONFIG.name;
+        const cleanEmail = formData.email || 'Not provided';
+        const cleanGoal = formData.goal || 'N/A';
+        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+
+        let md = `🚀 *НОВАЯ ЗАЯВКА В ИНКУБАТОР* (${cleanIncubator})\n`;
+        md += `━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        md += `📋 *КОНТАКТНЫЕ ДАННЫЕ*\n`;
+        md += `• *Email:* ${cleanEmail}\n`;
+
+        if (isTMA && tmaUser) {
+          md += `• *Источник:* 📱 Telegram Mini App (TMA)\n`;
+          const fullName = [tmaUser.first_name, tmaUser.last_name].filter(Boolean).join(' ');
+          if (fullName) md += `• *TG Имя:* ${fullName}\n`;
+          if (tmaUser.username) md += `• *TG Username:* @${tmaUser.username}\n`;
+          md += `• *Telegram ID:* \`${tmaUser.id || 'N/A'}\`\n`;
+          if (tmaUser.language_code) md += `• *Язык клиента:* ${tmaUser.language_code}\n`;
+        } else {
+          md += `• *Источник:* 🌐 Статический веб-сайт (GitHub Pages / Web)\n`;
+        }
+
+        md += `• *Цель:* ${cleanGoal}\n\n`;
+
+        if (formData.goal === 'Pitch my startup' || formData.goal === 'Both (Have a startup, ready to work part-time)') {
+          const cat = formData.startupCategory === 'Other' && formData.startupCategoryOther
+            ? `Other (${formData.startupCategoryOther})`
+            : formData.startupCategory;
+
+          const needsStr = formData.startupNeeds.length > 0 ? formData.startupNeeds.join(', ') : 'None specified';
+          md += `🏢 *СТАРТАП-ПРОЕКТ*\n`;
+          md += `• *Категория:* ${cat || 'N/A'}\n`;
+          md += `• *Стадия:* ${formData.startupStage || 'N/A'}\n`;
+          md += `• *Проблема и решение:*\n  _${formData.startupProblem || 'N/A'}_\n`;
+          md += `• *Стек технологий:* ${formData.startupTechStack || 'N/A'}\n`;
+          md += `• *Что нужно от инкубатора:* ${needsStr}\n\n`;
+        }
+
+        if (formData.goal === 'Looking for a job' || formData.goal === 'Both (Have a startup, ready to work part-time)') {
+          md += `💼 *СПЕЦИАЛИСТ / СОИСКАТЕЛЬ*\n`;
+          md += `• *Основной навык:* ${formData.jobSkill || 'N/A'}\n`;
+          md += `• *Ожидаемая компенсация:* ${formData.jobCompensation || 'N/A'}\n`;
+          md += `• *Формат и локация:* ${formData.jobAvailability || 'N/A'}\n`;
+          md += `• *Резюме / Портфолио:* ${formData.jobPortfolioUrl || 'Not provided'}\n\n`;
+        }
+
+        md += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        md += `📅 *Время:* \`${timestamp}\``;
+
+        const tgRes = await fetch(`https://api.telegram.org/bot${directBotToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: directAdminChatId,
+            text: md,
+            parse_mode: 'Markdown',
+          }),
+        });
+
+        const tgJson = await tgRes.json().catch(() => ({}));
+        if (!tgRes.ok || !tgJson.ok) {
+          throw new Error(tgJson.description || 'Failed to send to Telegram Bot');
+        }
+
+        setIsSubmitted(true);
+        triggerHaptic('medium');
+        return;
+      }
+
+      // 2. Otherwise send to backend API
       const endpoint = INCUBATOR_CONFIG.apiEndpoint || '/api/submit';
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -383,9 +459,13 @@ export default function App() {
 
             {/* Custom Incubator Logo or Native Apple Icon */}
             <div className="flex items-center space-x-2.5 min-w-0">
-              {INCUBATOR_CONFIG.logoUrl ? (
+              {INCUBATOR_CONFIG.logoUrl || incubatorLogoAsset ? (
                 <img
-                  src={INCUBATOR_CONFIG.logoUrl}
+                  src={
+                    INCUBATOR_CONFIG.logoUrl && !INCUBATOR_CONFIG.logoUrl.includes('file_000000007cb481fa9d1d5da3bfff24d4')
+                      ? INCUBATOR_CONFIG.logoUrl
+                      : incubatorLogoAsset
+                  }
                   alt={INCUBATOR_CONFIG.name}
                   className="w-7 h-7 rounded-xl object-cover shadow-sm shrink-0"
                   referrerPolicy="no-referrer"
