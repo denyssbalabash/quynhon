@@ -124,7 +124,7 @@ export default function App() {
   const [isRussianSystem] = useState<boolean>(() => isSystemRussian());
 
   // Active language:
-  // Defaults to detected system language (RU if Russian system, VI if Vietnamese, else EN)
+  // Defaults to detected system language (RU if Russian system, VN if Vietnamese, else EN)
   const [lang, setLang] = useState<Language>(() => detectLanguage());
   const t = TRANSLATIONS[lang];
 
@@ -407,7 +407,7 @@ export default function App() {
           </div>
 
           {/* Discreet Language Switcher:
-              Only EN and VI are switchable by user.
+              Only EN and VN are switchable by user.
               RU is never shown in the toggle — only auto-detected if the system/TG is Russian.
           */}
           <div className="flex items-center space-x-1 shrink-0 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60">
@@ -433,19 +433,19 @@ export default function App() {
                   EN
                 </button>
                 <button
-                  id="lang-vi-btn"
+                  id="lang-vn-btn"
                   type="button"
                   onClick={() => {
                     triggerHaptic('selection');
-                    setLang('vi');
+                    setLang('vn');
                   }}
                   className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
-                    lang === 'vi'
+                    lang === 'vn'
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  VI
+                  VN
                 </button>
               </>
             )}

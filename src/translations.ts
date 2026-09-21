@@ -1,10 +1,10 @@
 /**
- * Internationalization (EN / VI / RU) with strict system-detection rules:
- * - English (en) and Vietnamese (vi) can be toggled manually.
+ * Internationalization (EN / VN / RU) with strict system-detection rules:
+ * - English (en) and Vietnamese (vn) can be toggled manually.
  * - Russian (ru) cannot be selected manually; it is only activated if the user's system/Telegram language is Russian.
  */
 
-export type Language = 'en' | 'vi' | 'ru';
+export type Language = 'en' | 'vn' | 'ru';
 
 export interface Translations {
   steps: {
@@ -200,7 +200,7 @@ export const TRANSLATIONS: Record<Language, Translations> = {
     },
   },
 
-  vi: {
+  vn: {
     steps: {
       goalTitle: 'Mục Tiêu Của Bạn',
       goalSubtitle: 'Điều gì đưa bạn đến với vườn ươm khởi nghiệp của chúng tôi?',
@@ -470,14 +470,16 @@ export function isSystemVietnamese(): boolean {
     const tg = typeof window !== 'undefined' ? (window as unknown as { Telegram?: { WebApp?: any } }).Telegram?.WebApp : null;
     const tgLang = tg?.initDataUnsafe?.user?.language_code;
     if (tgLang && typeof tgLang === 'string') {
-      if (tgLang.toLowerCase().startsWith('vi')) {
+      const lower = tgLang.toLowerCase();
+      if (lower.startsWith('vi') || lower.startsWith('vn')) {
         return true;
       }
     }
 
     if (typeof navigator !== 'undefined') {
       const navLang = navigator.language || (navigator.languages && navigator.languages[0]) || '';
-      if (navLang.toLowerCase().startsWith('vi')) {
+      const lower = navLang.toLowerCase();
+      if (lower.startsWith('vi') || lower.startsWith('vn')) {
         return true;
       }
     }
@@ -490,11 +492,11 @@ export function isSystemVietnamese(): boolean {
 /**
  * Initial language resolver:
  * 1. If Russian system detected -> 'ru' (cannot be selected via switcher)
- * 2. If Vietnamese system detected -> 'vi'
+ * 2. If Vietnamese system detected -> 'vn'
  * 3. Default -> 'en'
  */
 export function detectLanguage(): Language {
   if (isSystemRussian()) return 'ru';
-  if (isSystemVietnamese()) return 'vi';
+  if (isSystemVietnamese()) return 'vn';
   return 'en';
 }
