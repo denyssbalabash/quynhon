@@ -11,12 +11,13 @@ import {
   Rocket,
   Briefcase,
   Layers,
+  GraduationCap,
+  HeartHandshake,
   AlertCircle,
   ArrowLeft,
   Send,
   ExternalLink,
   Check,
-  DollarSign,
   CheckCircle2,
   Mail,
   RotateCcw,
@@ -33,6 +34,8 @@ import {
 export type GoalOption =
   | 'Pitch my startup'
   | 'Looking for a job'
+  | 'Take startup course'
+  | 'Want to help the club'
   | 'Both (Have a startup, ready to work part-time)'
   | '';
 
@@ -66,11 +69,17 @@ export type ProfessionalSkill =
   | 'Design'
   | '';
 
-export type CompensationRange =
-  | 'Under $200'
-  | '$200 - $500'
-  | '$500+'
+export type CourseRole =
+  | 'I am a student'
+  | 'Entrepreneur'
+  | 'Other'
   | '';
+
+export type ClubHelpType =
+  | 'Investor'
+  | 'Grant'
+  | 'Organizational'
+  | 'Other';
 
 export type AvailabilityOption =
   | 'Vietnam Full-time'
@@ -87,9 +96,12 @@ export interface FormData {
   startupStage: StartupStage;
   startupNeeds: IncubatorNeed[];
   jobSkill: ProfessionalSkill;
-  jobCompensation: CompensationRange;
   jobAvailability: AvailabilityOption;
   jobPortfolioUrl: string;
+  courseRole: CourseRole;
+  courseRoleOther: string;
+  clubHelp: ClubHelpType[];
+  clubHelpOther: string;
   email: string;
 }
 
@@ -101,9 +113,12 @@ const INITIAL_FORM_DATA: FormData = {
   startupStage: '',
   startupNeeds: [],
   jobSkill: '',
-  jobCompensation: '',
   jobAvailability: '',
   jobPortfolioUrl: '',
+  courseRole: '',
+  courseRoleOther: '',
+  clubHelp: [],
+  clubHelpOther: '',
   email: '',
 };
 
@@ -193,7 +208,11 @@ export default function App() {
   // Determine active flow steps dynamically based on Q1
   // If in TMA, the contact step only asks for Email.
   const stepFlow = useMemo(() => {
-    const flow: Array<{ id: 'goal' | 'startup' | 'job' | 'contact'; title: string; subtitle: string }> = [
+    const flow: Array<{
+      id: 'goal' | 'startup' | 'job' | 'course' | 'help' | 'contact';
+      title: string;
+      subtitle: string;
+    }> = [
       { id: 'goal', title: t.steps.goalTitle, subtitle: t.steps.goalSubtitle },
     ];
 
@@ -201,6 +220,10 @@ export default function App() {
       flow.push({ id: 'startup', title: t.steps.startupTitle, subtitle: t.steps.startupSubtitle });
     } else if (formData.goal === 'Looking for a job') {
       flow.push({ id: 'job', title: t.steps.jobTitle, subtitle: t.steps.jobSubtitle });
+    } else if (formData.goal === 'Take startup course') {
+      flow.push({ id: 'course', title: t.steps.courseTitle, subtitle: t.steps.courseSubtitle });
+    } else if (formData.goal === 'Want to help the club') {
+      flow.push({ id: 'help', title: t.steps.helpTitle, subtitle: t.steps.helpSubtitle });
     } else if (formData.goal === 'Both (Have a startup, ready to work part-time)') {
       flow.push({ id: 'startup', title: t.steps.startupTitle, subtitle: t.steps.startupSubtitle });
       flow.push({ id: 'job', title: t.steps.jobTitle, subtitle: t.steps.jobSubtitle });
@@ -228,17 +251,27 @@ export default function App() {
       return formData.goal !== '';
     }
 
-    // Step 2: Startup questions are all optional to prevent funnel drop-off
+    // Startup questions are all optional to prevent funnel drop-off
     if (currentStep.id === 'startup') {
       return true;
     }
 
-    // Step 3: Talent / Job questions are all optional to prevent funnel drop-off
+    // Talent / Job questions are all optional to prevent funnel drop-off
     if (currentStep.id === 'job') {
       return true;
     }
 
-    // Step 4: Contact details
+    // Course questions are all optional to prevent funnel drop-off
+    if (currentStep.id === 'course') {
+      return true;
+    }
+
+    // Help the club questions are all optional to prevent funnel drop-off
+    if (currentStep.id === 'help') {
+      return true;
+    }
+
+    // Contact details
     if (currentStep.id === 'contact') {
       // In Telegram Mini App, user is already identified by Telegram account
       if (isTMA && tmaUser?.id) {
@@ -350,10 +383,27 @@ export default function App() {
 
         if (formData.goal === 'Looking for a job' || formData.goal === 'Both (Have a startup, ready to work part-time)') {
           html += `💼 <b>СПЕЦИАЛИСТ / СОИСКАТЕЛЬ</b>\n`;
-          html += `• <b>Основной навык:</b> ${escapeHtml(formData.jobSkill || 'N/A')}\n`;
-          html += `• <b>Ожидаемая компенсация:</b> ${escapeHtml(formData.jobCompensation || 'N/A')}\n`;
-          html += `• <b>Формат и локация:</b> ${escapeHtml(formData.jobAvailability || 'N/A')}\n`;
+          html += `• <b>Основной навык:</b> ${escapeHtml(formData.jobSkill || 'Not specified')}\n`;
+          html += `• <b>Формат и локация:</b> ${escapeHtml(formData.jobAvailability || 'Not specified')}\n`;
           html += `• <b>Резюме / Портфолио:</b> ${escapeHtml(formData.jobPortfolioUrl || 'Not provided')}\n\n`;
+        }
+
+        if (formData.goal === 'Take startup course') {
+          const roleStr = formData.courseRole === 'Other' && formData.courseRoleOther
+            ? `Other (${formData.courseRoleOther})`
+            : (formData.courseRole || 'Not specified');
+          html += `🎓 <b>КУРС ПО СТАРТАПАМ</b>\n`;
+          html += `• <b>Статус / Роль:</b> ${escapeHtml(roleStr)}\n\n`;
+        }
+
+        if (formData.goal === 'Want to help the club') {
+          let helpItems: string[] = [...formData.clubHelp];
+          if (helpItems.includes('Other') && formData.clubHelpOther) {
+            helpItems = helpItems.map((item) => (item === 'Other' ? `Other (${formData.clubHelpOther})` : item));
+          }
+          const helpStr = helpItems.length > 0 ? helpItems.join(', ') : 'Not specified';
+          html += `🤝 <b>ПОМОЩЬ КЛУБУ</b>\n`;
+          html += `• <b>Формат помощи:</b> ${escapeHtml(helpStr)}\n\n`;
         }
 
         html += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -610,6 +660,18 @@ export default function App() {
                           label: t.q1.options.job.label,
                           desc: t.q1.options.job.desc,
                           icon: Briefcase,
+                        },
+                        {
+                          value: 'Take startup course',
+                          label: t.q1.options.course.label,
+                          desc: t.q1.options.course.desc,
+                          icon: GraduationCap,
+                        },
+                        {
+                          value: 'Want to help the club',
+                          label: t.q1.options.help.label,
+                          desc: t.q1.options.help.desc,
+                          icon: HeartHandshake,
                         },
                         {
                           value: 'Both (Have a startup, ready to work part-time)',
@@ -884,54 +946,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Q8: Expected monthly compensation in USD */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="block text-sm font-semibold text-slate-800">
-                          {t.job.q8Label}
-                        </label>
-                        <span className="text-[11px] font-normal text-slate-400">
-                          ({t.optionalBadge})
-                        </span>
-                      </div>
-                      <div className="space-y-2.5">
-                        {(['Under $200', '$200 - $500', '$500+'] as CompensationRange[]).map((comp) => {
-                          const isSelected = formData.jobCompensation === comp;
-                          return (
-                            <button
-                              key={comp}
-                              type="button"
-                              id={`comp-${comp.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
-                              onClick={() => {
-                                triggerHaptic('selection');
-                                setFormData((prev) => ({
-                                  ...prev,
-                                  jobCompensation: isSelected ? '' : comp,
-                                }));
-                              }}
-                              className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-left transition-all ${
-                                isSelected
-                                  ? 'bg-blue-50/70 border-blue-500 text-blue-950 font-semibold'
-                                  : 'bg-[#F9F9FB] hover:bg-slate-100 text-slate-800 border-slate-200'
-                              } active:scale-[0.99] text-sm`}
-                            >
-                              <div className="flex items-center space-x-2">
-                                <DollarSign className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
-                                <span>{t.job.comp[comp]}</span>
-                              </div>
-                              <div
-                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                                  isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-300 bg-white'
-                                }`}
-                              >
-                                {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
                     {/* Q9: Location & availability */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
@@ -1007,6 +1021,164 @@ export default function App() {
                           className="w-full pl-10 pr-4 py-3.5 rounded-2xl bg-[#F9F9FB] border border-slate-200 text-[16px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
                         />
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* =========================================================================
+                    STEP: Startup Course Intake ("Take startup course")
+                    ========================================================================= */}
+                {currentStep.id === 'course' && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.course.roleLabel}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500">{t.course.roleHint}</p>
+                      
+                      <div className="space-y-2.5">
+                        {[
+                          { key: 'I am a student', label: t.course.roles.student },
+                          { key: 'Entrepreneur', label: t.course.roles.entrepreneur },
+                          { key: 'Other', label: t.course.roles.other },
+                        ].map((item) => {
+                          const isSelected = formData.courseRole === item.key;
+                          return (
+                            <button
+                              key={item.key}
+                              type="button"
+                              id={`course-role-${item.key.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
+                              onClick={() => {
+                                triggerHaptic('selection');
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  courseRole: isSelected ? '' : (item.key as CourseRole),
+                                }));
+                              }}
+                              className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-left transition-all ${
+                                isSelected
+                                  ? 'bg-blue-50/70 border-blue-500 text-blue-950 font-semibold ring-1 ring-blue-500/20'
+                                  : 'bg-[#F9F9FB] hover:bg-slate-100 text-slate-800 border-slate-200'
+                              } active:scale-[0.99] text-sm`}
+                            >
+                              <span>{item.label}</span>
+                              <div
+                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                                  isSelected ? 'border-blue-600 bg-blue-600' : 'border-slate-300 bg-white'
+                                }`}
+                              >
+                                {isSelected && <div className="w-2 h-2 rounded-full bg-white" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {formData.courseRole === 'Other' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="pt-2"
+                        >
+                          <input
+                            type="text"
+                            id="course-role-other"
+                            value={formData.courseRoleOther}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, courseRoleOther: e.target.value }))
+                            }
+                            placeholder={t.course.otherPlaceholder}
+                            className="w-full px-4 py-3.5 rounded-2xl bg-[#F9F9FB] border border-slate-200 text-[16px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+                          />
+                        </motion.div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* =========================================================================
+                    STEP: Want to Help the Club ("Want to help the club")
+                    ========================================================================= */}
+                {currentStep.id === 'help' && (
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.help.helpLabel}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500">{t.help.helpHint}</p>
+                      
+                      <div className="space-y-2.5">
+                        {[
+                          { key: 'Investor', label: t.help.types.investor },
+                          { key: 'Grant', label: t.help.types.grant },
+                          { key: 'Organizational', label: t.help.types.organizational },
+                          { key: 'Other', label: t.help.types.other },
+                        ].map((item) => {
+                          const isSelected = formData.clubHelp.includes(item.key as ClubHelpType);
+                          return (
+                            <button
+                              key={item.key}
+                              type="button"
+                              id={`help-type-${item.key.toLowerCase()}`}
+                              onClick={() => {
+                                triggerHaptic('selection');
+                                setFormData((prev) => {
+                                  const exists = prev.clubHelp.includes(item.key as ClubHelpType);
+                                  return {
+                                    ...prev,
+                                    clubHelp: exists
+                                      ? prev.clubHelp.filter((h) => h !== item.key)
+                                      : [...prev.clubHelp, item.key as ClubHelpType],
+                                  };
+                                });
+                              }}
+                              className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-left transition-all ${
+                                isSelected
+                                  ? 'bg-blue-50/70 border-blue-500 text-blue-950 font-semibold ring-1 ring-blue-500/20'
+                                  : 'bg-[#F9F9FB] hover:bg-slate-100 text-slate-800 border-slate-200'
+                              } active:scale-[0.99] text-sm`}
+                            >
+                              <span>{item.label}</span>
+                              <div
+                                className={`w-5 h-5 rounded-lg border flex items-center justify-center ${
+                                  isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white'
+                                }`}
+                              >
+                                {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {formData.clubHelp.includes('Other') && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="pt-2"
+                        >
+                          <input
+                            type="text"
+                            id="club-help-other"
+                            value={formData.clubHelpOther}
+                            onChange={(e) =>
+                              setFormData((prev) => ({ ...prev, clubHelpOther: e.target.value }))
+                            }
+                            placeholder={t.help.otherPlaceholder}
+                            className="w-full px-4 py-3.5 rounded-2xl bg-[#F9F9FB] border border-slate-200 text-[16px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+                          />
+                        </motion.div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -13,6 +13,10 @@ export interface FormTextConfig {
     startupSubtitle: string;
     jobTitle: string;
     jobSubtitle: string;
+    courseTitle: string;
+    courseSubtitle: string;
+    helpTitle: string;
+    helpSubtitle: string;
     contactTitle: string;
     contactSubtitle: string;
   };
@@ -30,6 +34,8 @@ export interface FormTextConfig {
     options: {
       pitch: { label: string; desc: string };
       job: { label: string; desc: string };
+      course: { label: string; desc: string };
+      help: { label: string; desc: string };
       both: { label: string; desc: string };
     };
   };
@@ -50,12 +56,31 @@ export interface FormTextConfig {
   job: {
     q7Label: string;
     skills: Record<string, string>;
-    q8Label: string;
-    comp: Record<string, string>;
     q9Label: string;
     avail: Record<string, string>;
     q10Label: string;
     q10Placeholder: string;
+  };
+  course: {
+    roleLabel: string;
+    roleHint: string;
+    roles: {
+      student: string;
+      entrepreneur: string;
+      other: string;
+    };
+    otherPlaceholder: string;
+  };
+  help: {
+    helpLabel: string;
+    helpHint: string;
+    types: {
+      investor: string;
+      grant: string;
+      organizational: string;
+      other: string;
+    };
+    otherPlaceholder: string;
   };
   contact: {
     emailLabel: string;
@@ -94,6 +119,10 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
       startupSubtitle: 'Tell us a bit about your venture',
       jobTitle: 'Talent & Skills',
       jobSubtitle: 'Tell us about your background',
+      courseTitle: 'Startup Course',
+      courseSubtitle: 'Learn how to build and launch startups',
+      helpTitle: 'Support the Club',
+      helpSubtitle: 'How would you like to contribute to our community?',
       contactTitle: 'Contact Information',
       contactSubtitle: 'How can our team reach you?',
     },
@@ -116,6 +145,14 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
         job: {
           label: 'Looking for a job',
           desc: 'Ready to join a funded startup or tech team as a contributor.',
+        },
+        course: {
+          label: 'Take startup creation course',
+          desc: 'Listen to our practical course on how startups are founded, validated, and built.',
+        },
+        help: {
+          label: 'Want to help the club',
+          desc: 'Contribute as an investor, grant provider, organizer, or community partner.',
         },
         both: {
           label: 'Both (Startup + Part-time)',
@@ -163,12 +200,6 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
         Operations: 'Operations & Management',
         Design: 'UI/UX Design',
       },
-      q8Label: 'Expected Monthly Compensation (USD)',
-      comp: {
-        'Under $200': 'Under $200',
-        '$200 - $500': '$200 - $500',
-        '$500+': '$500+',
-      },
       q9Label: 'Work Availability & Location',
       avail: {
         'Vietnam Full-time': 'Vietnam (Full-time)',
@@ -178,6 +209,27 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
       },
       q10Label: 'Link to CV, LinkedIn or Portfolio',
       q10Placeholder: 'https://linkedin.com/in/... or portfolio URL',
+    },
+    course: {
+      roleLabel: 'Who are you?',
+      roleHint: 'Choose the option that best describes you:',
+      roles: {
+        student: 'I am a student',
+        entrepreneur: 'Entrepreneur',
+        other: 'Other',
+      },
+      otherPlaceholder: 'Please tell us more about your background...',
+    },
+    help: {
+      helpLabel: 'How would you like to help the club?',
+      helpHint: 'Select all that apply:',
+      types: {
+        investor: 'Investor',
+        grant: 'Grant / Sponsorship',
+        organizational: 'Organizational & Operations',
+        other: 'Other',
+      },
+      otherPlaceholder: 'Please describe how you would like to help...',
     },
     contact: {
       emailLabel: 'Contact Email',
@@ -213,6 +265,10 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
       startupSubtitle: 'Chia sẻ ngắn gọn về dự án của bạn',
       jobTitle: 'Kinh Nghiệm & Kỹ Năng',
       jobSubtitle: 'Chia sẻ về chuyên môn của bạn',
+      courseTitle: 'Khoá Học Khởi Nghiệp',
+      courseSubtitle: 'Học cách xây dựng và vận hành startup từ đầu',
+      helpTitle: 'Đồng Hành Cùng CLB',
+      helpSubtitle: 'Bạn muốn đóng góp cho cộng đồng như thế nào?',
       contactTitle: 'Thông Tin Liên Hệ',
       contactSubtitle: 'Vườn ươm có thể liên hệ với bạn qua đâu?',
     },
@@ -235,6 +291,14 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
         job: {
           label: 'Tìm việc làm trong startup',
           desc: 'Sẵn sàng gia nhập đội ngũ khởi nghiệp hoặc công ty công nghệ.',
+        },
+        course: {
+          label: 'Tham gia khoá học tạo startup',
+          desc: 'Lắng nghe khoá học thực tế về cách tạo dựng, kiểm chứng và phát triển startup.',
+        },
+        help: {
+          label: 'Muốn hỗ trợ câu lạc bộ',
+          desc: 'Đóng góp với vai trò nhà đầu tư, tài trợ grant, ban tổ chức hoặc đối tác.',
         },
         both: {
           label: 'Cả hai (Có dự án & nhận việc part-time)',
@@ -282,12 +346,6 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
         Operations: 'Vận hành & Quản lý',
         Design: 'Thiết kế (UI/UX)',
       },
-      q8Label: 'Mức Thu Nhập Kỳ Vọng (USD / tháng)',
-      comp: {
-        'Under $200': 'Dưới $200',
-        '$200 - $500': '$200 - $500',
-        '$500+': 'Trên $500',
-      },
       q9Label: 'Hình Thức Làm Việc & Địa Điểm',
       avail: {
         'Vietnam Full-time': 'Tại Việt Nam (Toàn thời gian)',
@@ -297,6 +355,27 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
       },
       q10Label: 'Đường Dẫn CV, LinkedIn hoặc Portfolio',
       q10Placeholder: 'https://linkedin.com/in/... hoặc link portfolio',
+    },
+    course: {
+      roleLabel: 'Bạn hiện là ai?',
+      roleHint: 'Chọn mô tả phù hợp nhất với bạn:',
+      roles: {
+        student: 'Tôi là sinh viên',
+        entrepreneur: 'Doanh nhân / Đã có kinh doanh',
+        other: 'Khác',
+      },
+      otherPlaceholder: 'Vui lòng chia sẻ thêm về ngành học hoặc công việc...',
+    },
+    help: {
+      helpLabel: 'Bạn muốn hỗ trợ câu lạc bộ như thế nào?',
+      helpHint: 'Có thể chọn nhiều mục:',
+      types: {
+        investor: 'Nhà đầu tư (Investor)',
+        grant: 'Tài trợ / Quỹ Grant',
+        organizational: 'Hỗ trợ tổ chức & vận hành',
+        other: 'Khác',
+      },
+      otherPlaceholder: 'Vui lòng mô tả cách bạn muốn hỗ trợ...',
     },
     contact: {
       emailLabel: 'Email Liên Hệ',

@@ -146,12 +146,14 @@ async function startServer() {
         startupCategoryOther,
         startupProblem,
         startupStage,
-        startupTechStack,
         startupNeeds,
         jobSkill,
-        jobCompensation,
         jobAvailability,
         jobPortfolioUrl,
+        courseRole,
+        courseRoleOther,
+        clubHelp,
+        clubHelpOther,
         email,
         isTMA,
         tmaUser,
@@ -222,10 +224,29 @@ async function startServer() {
       // Talent / Job seeker details
       if (goal === 'Looking for a job' || goal === 'Both (Have a startup, ready to work part-time)') {
         md += `💼 *СПЕЦИАЛИСТ / СОИСКАТЕЛЬ*\n`;
-        md += `• *Основной навык:* ${escapeTelegramMarkdown(jobSkill || 'N/A')}\n`;
-        md += `• *Ожидаемая компенсация:* ${escapeTelegramMarkdown(jobCompensation || 'N/A')}\n`;
-        md += `• *Формат и локация:* ${escapeTelegramMarkdown(jobAvailability || 'N/A')}\n`;
+        md += `• *Основной навык:* ${escapeTelegramMarkdown(jobSkill || 'Not specified')}\n`;
+        md += `• *Формат и локация:* ${escapeTelegramMarkdown(jobAvailability || 'Not specified')}\n`;
         md += `• *Резюме / Портфолио:* ${escapeTelegramMarkdown(jobPortfolioUrl || 'Not provided')}\n\n`;
+      }
+
+      // Course details
+      if (goal === 'Take startup course') {
+        const roleStr = courseRole === 'Other' && courseRoleOther
+          ? `Other (${courseRoleOther})`
+          : (courseRole || 'Not specified');
+        md += `🎓 *КУРС ПО СТАРТАПАМ*\n`;
+        md += `• *Статус / Роль:* ${escapeTelegramMarkdown(roleStr)}\n\n`;
+      }
+
+      // Help club details
+      if (goal === 'Want to help the club') {
+        let helpItems = Array.isArray(clubHelp) ? [...clubHelp] : [];
+        if (helpItems.includes('Other') && clubHelpOther) {
+          helpItems = helpItems.map(item => item === 'Other' ? `Other (${clubHelpOther})` : item);
+        }
+        const helpStr = helpItems.length > 0 ? helpItems.join(', ') : 'Not specified';
+        md += `🤝 *ПОМОЩЬ КЛУБУ*\n`;
+        md += `• *Формат помощи:* ${escapeTelegramMarkdown(helpStr)}\n\n`;
       }
 
       md += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -282,9 +303,22 @@ async function startServer() {
           <div style="background-color: #f8fafc; border-left: 4px solid #059669; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
             <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1e293b;">💼 Talent & Job Details</h3>
             <p style="margin: 6px 0; font-size: 14px;"><strong>Core Skill:</strong> ${jobSkill || 'N/A'}</p>
-            <p style="margin: 6px 0; font-size: 14px;"><strong>Expected Compensation:</strong> ${jobCompensation || 'N/A'}</p>
             <p style="margin: 6px 0; font-size: 14px;"><strong>Format & Availability:</strong> ${jobAvailability || 'N/A'}</p>
             <p style="margin: 6px 0; font-size: 14px;"><strong>Portfolio / CV:</strong> ${jobPortfolioUrl ? `<a href="${jobPortfolioUrl}" style="color: #2563eb;">${jobPortfolioUrl}</a>` : 'Not provided'}</p>
+          </div>
+          ` : ''}
+
+          ${goal === 'Take startup course' ? `
+          <div style="background-color: #f8fafc; border-left: 4px solid #8b5cf6; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1e293b;">🎓 Startup Course Intake</h3>
+            <p style="margin: 6px 0; font-size: 14px;"><strong>Role / Status:</strong> ${courseRole === 'Other' && courseRoleOther ? `Other (${courseRoleOther})` : (courseRole || 'Not specified')}</p>
+          </div>
+          ` : ''}
+
+          ${goal === 'Want to help the club' ? `
+          <div style="background-color: #f8fafc; border-left: 4px solid #f59e0b; padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1e293b;">🤝 Club Support</h3>
+            <p style="margin: 6px 0; font-size: 14px;"><strong>Help Format:</strong> ${Array.isArray(clubHelp) && clubHelp.length > 0 ? clubHelp.map((h: string) => h === 'Other' && clubHelpOther ? `Other (${clubHelpOther})` : h).join(', ') : 'Not specified'}</p>
           </div>
           ` : ''}
 
@@ -344,15 +378,21 @@ STARTUP DETAILS:
 • Category:      ${startupCategory === 'Other' && startupCategoryOther ? `Other (${startupCategoryOther})` : startupCategory || 'N/A'}
 • Stage:         ${startupStage || 'N/A'}
 • Problem/Sol:   ${startupProblem || 'N/A'}
-• Tech Stack:    ${startupTechStack || 'N/A'}
 • Needs:         ${Array.isArray(startupNeeds) ? startupNeeds.join(', ') : 'None'}
 ` : ''}
 ${goal === 'Looking for a job' || goal === 'Both (Have a startup, ready to work part-time)' ? `
 TALENT / JOB DETAILS:
 • Primary Skill: ${jobSkill || 'N/A'}
-• Expected Comp: ${jobCompensation || 'N/A'}
 • Format/Avail:  ${jobAvailability || 'N/A'}
 • Portfolio/CV:  ${jobPortfolioUrl || 'Not provided'}
+` : ''}
+${goal === 'Take startup course' ? `
+STARTUP COURSE INTAKE:
+• Role / Status: ${courseRole === 'Other' && courseRoleOther ? `Other (${courseRoleOther})` : (courseRole || 'Not specified')}
+` : ''}
+${goal === 'Want to help the club' ? `
+CLUB SUPPORT:
+• Help Format:   ${Array.isArray(clubHelp) && clubHelp.length > 0 ? clubHelp.map((h: string) => h === 'Other' && clubHelpOther ? `Other (${clubHelpOther})` : h).join(', ') : 'Not specified'}
 ` : ''}
 
 Target Destination: ${targetEmail}
