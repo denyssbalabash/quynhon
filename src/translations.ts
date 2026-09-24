@@ -1,6 +1,6 @@
 /**
- * Internationalization re-exporting config from formContent.ts
- * You can edit texts directly in /src/formContent.ts
+ * Internationalization helpers re-exporting config from formContent.ts
+ * Strictly supports English ('en' - default) and Vietnamese ('vn').
  */
 
 import {
@@ -14,37 +14,11 @@ export type Translations = FormTextConfig;
 export const TRANSLATIONS = FORM_CONTENT_CONFIG;
 
 /**
- * Detects if the system language is Russian (RU, UK, BE, KK)
- */
-export function isSystemRussian(): boolean {
-  try {
-    const tg = typeof window !== 'undefined' ? (window as unknown as { Telegram?: { WebApp?: any } }).Telegram?.WebApp : null;
-    const tgLang = tg?.initDataUnsafe?.user?.language_code;
-    if (tgLang && typeof tgLang === 'string') {
-      const lower = tgLang.toLowerCase();
-      if (lower.startsWith('ru') || lower.startsWith('uk') || lower.startsWith('be') || lower.startsWith('kk')) {
-        return true;
-      }
-    }
-
-    if (typeof navigator !== 'undefined') {
-      const navLang = navigator.language || (navigator.languages && navigator.languages[0]) || '';
-      const lower = navLang.toLowerCase();
-      if (lower.startsWith('ru') || lower.startsWith('uk') || lower.startsWith('be') || lower.startsWith('kk')) {
-        return true;
-      }
-    }
-  } catch {
-    // ignore
-  }
-  return false;
-}
-
-/**
- * Detects if the system language is Vietnamese
+ * Detects if the device, browser, or Telegram system language is Vietnamese
  */
 export function isSystemVietnamese(): boolean {
   try {
+    // 1. Check Telegram Mini App user language code
     const tg = typeof window !== 'undefined' ? (window as unknown as { Telegram?: { WebApp?: any } }).Telegram?.WebApp : null;
     const tgLang = tg?.initDataUnsafe?.user?.language_code;
     if (tgLang && typeof tgLang === 'string') {
@@ -54,11 +28,19 @@ export function isSystemVietnamese(): boolean {
       }
     }
 
+    // 2. Check browser / device navigator languages
     if (typeof navigator !== 'undefined') {
       const navLang = navigator.language || (navigator.languages && navigator.languages[0]) || '';
       const lower = navLang.toLowerCase();
       if (lower.startsWith('vi') || lower.startsWith('vn')) {
         return true;
+      }
+      if (navigator.languages && Array.isArray(navigator.languages)) {
+        for (const l of navigator.languages) {
+          if (l.toLowerCase().startsWith('vi') || l.toLowerCase().startsWith('vn')) {
+            return true;
+          }
+        }
       }
     }
   } catch {
@@ -69,12 +51,12 @@ export function isSystemVietnamese(): boolean {
 
 /**
  * Initial language resolver:
- * 1. If Russian system detected -> 'ru' (cannot be selected via switcher)
- * 2. If Vietnamese system detected -> 'vn'
- * 3. Default -> 'en'
+ * - If device/phone is in Vietnamese -> 'vn'
+ * - Otherwise default -> 'en'
  */
 export function detectLanguage(): Language {
-  if (isSystemRussian()) return 'ru';
-  if (isSystemVietnamese()) return 'vn';
+  if (isSystemVietnamese()) {
+    return 'vn';
+  }
   return 'en';
 }

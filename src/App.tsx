@@ -17,7 +17,6 @@ import {
   ExternalLink,
   Check,
   DollarSign,
-  Cpu,
   CheckCircle2,
   Mail,
   RotateCcw,
@@ -27,7 +26,6 @@ import incubatorLogoAsset from './file_000000007cb481fa9d1d5da3bfff24d4.png';
 import {
   TRANSLATIONS,
   detectLanguage,
-  isSystemRussian,
   Language,
 } from './translations';
 
@@ -39,11 +37,11 @@ export type GoalOption =
   | '';
 
 export type StartupCategory =
-  | 'SaaS'
-  | 'E-commerce'
-  | 'Fintech'
-  | 'Marketplace'
-  | 'EdTech'
+  | 'Tourism & Hospitality'
+  | 'Technology & AI'
+  | 'Transport & Logistics'
+  | 'Food & Beverage'
+  | 'Retail & Services'
   | 'Other'
   | '';
 
@@ -87,7 +85,6 @@ export interface FormData {
   startupCategoryOther: string;
   startupProblem: string;
   startupStage: StartupStage;
-  startupTechStack: string;
   startupNeeds: IncubatorNeed[];
   jobSkill: ProfessionalSkill;
   jobCompensation: CompensationRange;
@@ -102,7 +99,6 @@ const INITIAL_FORM_DATA: FormData = {
   startupCategoryOther: '',
   startupProblem: '',
   startupStage: '',
-  startupTechStack: '',
   startupNeeds: [],
   jobSkill: '',
   jobCompensation: '',
@@ -120,12 +116,7 @@ interface TelegramUser {
 }
 
 export default function App() {
-  // Check if system language is Russian:
-  // Russian cannot be chosen manually via UI; only activated if system is Russian.
-  const [isRussianSystem] = useState<boolean>(() => isSystemRussian());
-
-  // Active language:
-  // Defaults to detected system language (RU if Russian system, VN if Vietnamese, else EN)
+  // Active language: Defaults to detected language (VN if Vietnamese device/system, else EN)
   const [lang, setLang] = useState<Language>(() => detectLanguage());
   const t = TRANSLATIONS[lang];
 
@@ -228,34 +219,32 @@ export default function App() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   };
 
-  // Validate current step before proceeding
+  // Validate current step before proceeding (minimum friction for highest conversion)
   const isCurrentStepValid = (): boolean => {
     if (!currentStep) return false;
 
+    // Step 1: Goal selection routes the funnel
     if (currentStep.id === 'goal') {
       return formData.goal !== '';
     }
 
+    // Step 2: Startup questions are all optional to prevent funnel drop-off
     if (currentStep.id === 'startup') {
-      return (
-        formData.startupCategory !== '' &&
-        formData.startupProblem.trim().length > 5 &&
-        formData.startupStage !== '' &&
-        formData.startupTechStack.trim().length > 0 &&
-        formData.startupNeeds.length > 0
-      );
+      return true;
     }
 
+    // Step 3: Talent / Job questions are all optional to prevent funnel drop-off
     if (currentStep.id === 'job') {
-      return (
-        formData.jobSkill !== '' &&
-        formData.jobCompensation !== '' &&
-        formData.jobAvailability !== ''
-      );
+      return true;
     }
 
+    // Step 4: Contact details
     if (currentStep.id === 'contact') {
-      // In TMA, Telegram identity is already captured automatically; email is requested
+      // In Telegram Mini App, user is already identified by Telegram account
+      if (isTMA && tmaUser?.id) {
+        return formData.email.trim() === '' || isEmailValid(formData.email);
+      }
+      // On web, valid email ensures the incubator team can reach out
       return isEmailValid(formData.email);
     }
 
@@ -351,10 +340,11 @@ export default function App() {
 
           const needsStr = formData.startupNeeds.length > 0 ? formData.startupNeeds.join(', ') : 'None specified';
           html += `🏢 <b>СТАРТАП-ПРОЕКТ</b>\n`;
-          html += `• <b>Категория:</b> ${escapeHtml(cat || 'N/A')}\n`;
-          html += `• <b>Стадия:</b> ${escapeHtml(formData.startupStage || 'N/A')}\n`;
-          html += `• <b>Проблема и решение:</b>\n  <i>${escapeHtml(formData.startupProblem || 'N/A')}</i>\n`;
-          html += `• <b>Стек технологий:</b> ${escapeHtml(formData.startupTechStack || 'N/A')}\n`;
+          html += `• <b>Категория:</b> ${escapeHtml(cat || 'Not specified')}\n`;
+          html += `• <b>Стадия:</b> ${escapeHtml(formData.startupStage || 'Not specified')}\n`;
+          if (formData.startupProblem) {
+            html += `• <b>Проблема и решение:</b>\n  <i>${escapeHtml(formData.startupProblem)}</i>\n`;
+          }
           html += `• <b>Что нужно от инкубатора:</b> ${escapeHtml(needsStr)}\n\n`;
         }
 
@@ -494,49 +484,38 @@ export default function App() {
             </div>
           </div>
 
-          {/* Discreet Language Switcher:
-              Only EN and VN are switchable by user.
-              RU is never shown in the toggle — only auto-detected if the system/TG is Russian.
-          */}
+          {/* iOS-style Language Switcher: EN (default) and VN */}
           <div className="flex items-center space-x-1 shrink-0 bg-slate-100/90 p-1 rounded-xl border border-slate-200/60">
-            {isRussianSystem && lang === 'ru' ? (
-              <div className="px-2.5 py-0.5 rounded-lg text-xs font-semibold bg-white text-blue-600 shadow-sm">
-                RU
-              </div>
-            ) : (
-              <>
-                <button
-                  id="lang-en-btn"
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic('selection');
-                    setLang('en');
-                  }}
-                  className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
-                    lang === 'en'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  EN
-                </button>
-                <button
-                  id="lang-vn-btn"
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic('selection');
-                    setLang('vn');
-                  }}
-                  className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all ${
-                    lang === 'vn'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  VN
-                </button>
-              </>
-            )}
+            <button
+              id="lang-en-btn"
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                setLang('en');
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                lang === 'en'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              EN
+            </button>
+            <button
+              id="lang-vn-btn"
+              type="button"
+              onClick={() => {
+                triggerHaptic('selection');
+                setLang('vn');
+              }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                lang === 'vn'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              VN
+            </button>
           </div>
         </header>
 
@@ -695,9 +674,14 @@ export default function App() {
                   <div className="space-y-6">
                     {/* Q2: Startup Category */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.startup.q2Label} <span className="text-rose-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.startup.q2Label}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
                       <select
                         id="startup-category-select"
                         value={formData.startupCategory}
@@ -710,13 +694,21 @@ export default function App() {
                         }}
                         className="w-full px-4 py-3.5 rounded-2xl bg-[#F9F9FB] border border-slate-200 text-[16px] text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all cursor-pointer shadow-sm"
                       >
-                        <option value="" disabled>{t.startup.q2Placeholder}</option>
-                        <option value="SaaS">{t.startup.categories['SaaS']}</option>
-                        <option value="E-commerce">{t.startup.categories['E-commerce']}</option>
-                        <option value="Fintech">{t.startup.categories['Fintech']}</option>
-                        <option value="Marketplace">{t.startup.categories['Marketplace']}</option>
-                        <option value="EdTech">{t.startup.categories['EdTech']}</option>
-                        <option value="Other">{t.startup.categories['Other']}</option>
+                        <option value="">{t.startup.q2Placeholder}</option>
+                        {(
+                          [
+                            'Tourism & Hospitality',
+                            'Technology & AI',
+                            'Transport & Logistics',
+                            'Food & Beverage',
+                            'Retail & Services',
+                            'Other',
+                          ] as StartupCategory[]
+                        ).map((cat) => (
+                          <option key={cat} value={cat}>
+                            {t.startup.categories[cat]}
+                          </option>
+                        ))}
                       </select>
 
                       {formData.startupCategory === 'Other' && (
@@ -737,9 +729,14 @@ export default function App() {
 
                     {/* Q3: One sentence problem & solution */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.startup.q3Label} <span className="text-rose-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.startup.q3Label}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
                       <textarea
                         id="startup-problem-textarea"
                         rows={3}
@@ -750,17 +747,21 @@ export default function App() {
                         placeholder={t.startup.q3Placeholder}
                         className="w-full px-4 py-3.5 rounded-2xl bg-[#F9F9FB] border border-slate-200 text-[16px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm resize-none"
                       />
-                      <p className="text-[11px] text-slate-400 flex justify-between">
-                        <span>{t.startup.q3Hint}</span>
-                        <span>{formData.startupProblem.length} chars</span>
+                      <p className="text-[11px] text-slate-400">
+                        {t.startup.q3Hint}
                       </p>
                     </div>
 
                     {/* Q4: Stage of product */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.startup.q4Label} <span className="text-rose-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.startup.q4Label}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
                       <div className="grid grid-cols-2 gap-2.5">
                         {(['Idea', 'Prototype/MVP', 'Early users', 'Revenue'] as StartupStage[]).map((stage) => {
                           const isSelected = formData.startupStage === stage;
@@ -771,7 +772,10 @@ export default function App() {
                               id={`stage-${stage.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                               onClick={() => {
                                 triggerHaptic('selection');
-                                setFormData((prev) => ({ ...prev, startupStage: stage }));
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  startupStage: isSelected ? '' : stage,
+                                }));
                               }}
                               className={`p-3.5 rounded-2xl border text-center transition-all ${
                                 isSelected
@@ -786,31 +790,16 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Q5: Core Technical Solution or Stack */}
+                    {/* Q6: Checkbox: What is needed from incubator */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.startup.q5Label} <span className="text-rose-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <Cpu className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          id="startup-tech-stack"
-                          value={formData.startupTechStack}
-                          onChange={(e) =>
-                            setFormData((prev) => ({ ...prev, startupTechStack: e.target.value }))
-                          }
-                          placeholder={t.startup.q5Placeholder}
-                          className="w-full pl-10 pr-4 py-3.5 rounded-2xl bg-[#F9F9FB] border border-slate-200 text-[16px] text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-                        />
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.startup.q6Label}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Q6: Checkbox: #1 thing needed from incubator */}
-                    <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.startup.q6Label} <span className="text-rose-500">*</span>
-                      </label>
                       <p className="text-xs text-slate-500">{t.startup.q6Hint}</p>
                       <div className="space-y-2.5">
                         {(
@@ -857,9 +846,14 @@ export default function App() {
                   <div className="space-y-6">
                     {/* Q7: Strongest professional skill */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.job.q7Label} <span className="text-rose-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.job.q7Label}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
                       <div className="grid grid-cols-2 gap-2.5">
                         {(['Engineering', 'Marketing', 'Sales', 'Operations', 'Design'] as ProfessionalSkill[]).map(
                           (skill) => {
@@ -871,7 +865,10 @@ export default function App() {
                                 id={`skill-${skill.toLowerCase()}`}
                                 onClick={() => {
                                   triggerHaptic('selection');
-                                  setFormData((prev) => ({ ...prev, jobSkill: skill }));
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    jobSkill: isSelected ? '' : skill,
+                                  }));
                                 }}
                                 className={`p-3.5 rounded-2xl border text-center transition-all ${
                                   isSelected
@@ -889,9 +886,14 @@ export default function App() {
 
                     {/* Q8: Expected monthly compensation in USD */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.job.q8Label} <span className="text-rose-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.job.q8Label}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
                       <div className="space-y-2.5">
                         {(['Under $200', '$200 - $500', '$500+'] as CompensationRange[]).map((comp) => {
                           const isSelected = formData.jobCompensation === comp;
@@ -902,7 +904,10 @@ export default function App() {
                               id={`comp-${comp.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                               onClick={() => {
                                 triggerHaptic('selection');
-                                setFormData((prev) => ({ ...prev, jobCompensation: comp }));
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  jobCompensation: isSelected ? '' : comp,
+                                }));
                               }}
                               className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-left transition-all ${
                                 isSelected
@@ -929,9 +934,14 @@ export default function App() {
 
                     {/* Q9: Location & availability */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.job.q9Label} <span className="text-rose-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.job.q9Label}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
                       <div className="space-y-2.5">
                         {(
                           [
@@ -949,7 +959,10 @@ export default function App() {
                               id={`avail-${avail.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
                               onClick={() => {
                                 triggerHaptic('selection');
-                                setFormData((prev) => ({ ...prev, jobAvailability: avail }));
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  jobAvailability: isSelected ? '' : avail,
+                                }));
                               }}
                               className={`w-full p-3.5 rounded-2xl border flex items-center justify-between text-left transition-all ${
                                 isSelected
@@ -973,9 +986,14 @@ export default function App() {
 
                     {/* Q10: Link to CV / Portfolio */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.job.q10Label}
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.job.q10Label}
+                        </label>
+                        <span className="text-[11px] font-normal text-slate-400">
+                          ({t.optionalBadge})
+                        </span>
+                      </div>
                       <div className="relative">
                         <ExternalLink className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
@@ -1013,9 +1031,18 @@ export default function App() {
 
                     {/* Email Input */}
                     <div className="space-y-2">
-                      <label className="block text-sm font-semibold text-slate-800">
-                        {t.contact.emailLabel} <span className="text-rose-500">*</span>
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="block text-sm font-semibold text-slate-800">
+                          {t.contact.emailLabel}
+                        </label>
+                        {isTMA && tmaUser ? (
+                          <span className="text-[11px] font-normal text-slate-400">
+                            ({t.optionalBadge})
+                          </span>
+                        ) : (
+                          <span className="text-rose-500 text-xs font-semibold">*</span>
+                        )}
+                      </div>
                       <div className="relative">
                         <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input

@@ -216,7 +216,6 @@ async function startServer() {
         md += `• *Категория:* ${escapeTelegramMarkdown(cat || 'N/A')}\n`;
         md += `• *Стадия:* ${escapeTelegramMarkdown(startupStage || 'N/A')}\n`;
         md += `• *Проблема и решение:*\n  _${escapeTelegramMarkdown(startupProblem || 'N/A')}_\n`;
-        md += `• *Стек технологий:* ${escapeTelegramMarkdown(startupTechStack || 'N/A')}\n`;
         md += `• *Что нужно от инкубатора:* ${escapeTelegramMarkdown(needsStr)}\n\n`;
       }
 
@@ -275,7 +274,6 @@ async function startServer() {
             <p style="margin: 6px 0; font-size: 14px;"><strong>Category:</strong> ${startupCategory === 'Other' && startupCategoryOther ? `Other (${startupCategoryOther})` : startupCategory}</p>
             <p style="margin: 6px 0; font-size: 14px;"><strong>Stage:</strong> ${startupStage || 'N/A'}</p>
             <p style="margin: 6px 0; font-size: 14px;"><strong>Problem & Solution:</strong><br/><em style="color: #334155;">${startupProblem || 'N/A'}</em></p>
-            <p style="margin: 6px 0; font-size: 14px;"><strong>Tech Stack:</strong> ${startupTechStack || 'N/A'}</p>
             <p style="margin: 6px 0; font-size: 14px;"><strong>Needs from Incubator:</strong> ${Array.isArray(startupNeeds) ? startupNeeds.join(', ') : 'None specified'}</p>
           </div>
           ` : ''}
