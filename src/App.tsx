@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   Mail,
   RotateCcw,
+  Shield,
+  Copy,
 } from 'lucide-react';
 import { INCUBATOR_CONFIG } from './config';
 import incubatorLogoAsset from './file_000000007cb481fa9d1d5da3bfff24d4.png';
@@ -146,6 +148,7 @@ export default function App() {
   // Telegram WebApp environment detection
   const [isTMA, setIsTMA] = useState<boolean>(false);
   const [tmaUser, setTmaUser] = useState<TelegramUser | null>(null);
+  const [isCopied, setIsCopied] = useState<boolean>(false);
 
   // Silent Telegram WebApp initialization
   useEffect(() => {
@@ -159,15 +162,35 @@ export default function App() {
         if (tg.setBackgroundColor) tg.setBackgroundColor('#F2F2F7');
 
         const user = tg.initDataUnsafe?.user;
-        if (user) {
+        const hasInitData = Boolean(tg.initData && tg.initData.length > 0);
+        const isTelegramPlatform = Boolean(tg.platform && tg.platform !== 'unknown');
+
+        if (user || hasInitData || isTelegramPlatform) {
           setIsTMA(true);
-          setTmaUser(user);
+          if (user) setTmaUser(user);
         }
       } catch (err) {
         console.warn('TMA init exception:', err);
       }
     }
   }, []);
+
+  // Allow preview/dev override via query param ?preview=1 or ?dev=1
+  const isPreviewMode = typeof window !== 'undefined' && (
+    window.location.search.includes('preview=1') ||
+    window.location.search.includes('dev=1')
+  );
+
+  const isTelegramActive = isTMA || (
+    typeof window !== 'undefined' && Boolean(
+      (window as any).Telegram?.WebApp?.initData ||
+      (window as any).Telegram?.WebApp?.initDataUnsafe?.user ||
+      window.location.hash.includes('tgWebAppData') ||
+      window.location.search.includes('tgWebAppPlatform')
+    )
+  );
+
+  const isBlockedOutsideTelegram = INCUBATOR_CONFIG.requireTelegramApp && !isTelegramActive && !isPreviewMode;
 
   // Sync Telegram WebApp native BackButton
   useEffect(() => {
@@ -429,8 +452,30 @@ export default function App() {
         return;
       }
 
-      // 2. Otherwise send to backend API
+      // 2. Dispatch to Google Apps Script or Backend API
       const endpoint = INCUBATOR_CONFIG.apiEndpoint || '/api/submit';
+      const isGoogleScript = endpoint.includes('script.google.com');
+
+      if (isGoogleScript) {
+        // Google Apps Script requires text/plain and mode: 'no-cors' to avoid browser CORS preflight & redirect blocks
+        try {
+          await fetch(endpoint, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+              'Content-Type': 'text/plain;charset=utf-8',
+            },
+            body: JSON.stringify(payload),
+          });
+          setIsSubmitted(true);
+          triggerHaptic('medium');
+          return;
+        } catch (gasErr: any) {
+          console.warn('Google Apps Script request error:', gasErr);
+          throw new Error(t.error.general);
+        }
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -570,7 +615,7 @@ export default function App() {
         </header>
 
         {/* Apple-style Animated Progress Indicator */}
-        {!isSubmitted && (
+        {!isSubmitted && !isBlockedOutsideTelegram && (
           <div className="w-full bg-slate-100 h-1 relative overflow-hidden">
             <motion.div
               className="h-full bg-blue-600"
@@ -584,7 +629,84 @@ export default function App() {
         {/* Content Container */}
         <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
           <AnimatePresence mode="wait">
-            {!isSubmitted ? (
+            {isBlockedOutsideTelegram ? (
+              /* =========================================================================
+                 TELEGRAM ONLY SECURITY GATE: Block non-Telegram browser traffic
+                 ========================================================================= */
+              <motion.div
+                key="telegram-gate-screen"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.25, ease: 'easeOut' }}
+                className="py-6 px-2 flex flex-col items-center text-center space-y-6 max-w-sm mx-auto"
+              >
+                <div className="w-20 h-20 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shadow-sm relative">
+                  <Shield className="w-10 h-10" />
+                  <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs shadow-md font-bold">
+                    TG
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="inline-block px-3 py-1 rounded-full bg-blue-100/70 text-blue-700 text-xs font-semibold uppercase tracking-wider">
+                    {t.telegramGate.badge}
+                  </span>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+                    {t.telegramGate.title}
+                  </h1>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {t.telegramGate.subtitle}
+                  </p>
+                </div>
+
+                <div className="w-full p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-500 leading-relaxed text-left space-y-2">
+                  <p>{t.telegramGate.instructions}</p>
+                  <p className="text-[11px] text-slate-400">
+                    🤖 <b>Telegram Mini App:</b> @{INCUBATOR_CONFIG.botUsername} (t.me/{INCUBATOR_CONFIG.botUsername}/form)
+                  </p>
+                </div>
+
+                <div className="w-full space-y-2.5 pt-2">
+                  <a
+                    href={INCUBATOR_CONFIG.telegramAppUrl || `https://t.me/${INCUBATOR_CONFIG.botUsername}/form`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => triggerHaptic('medium')}
+                    className="w-full py-4 px-6 rounded-2xl bg-blue-600 text-white font-semibold text-[15px] hover:bg-blue-700 active:scale-[0.98] transition-all shadow-[0_4px_16px_rgba(37,99,235,0.25)] flex items-center justify-center space-x-2 cursor-pointer no-underline"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>{t.telegramGate.openBtn}</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic('light');
+                      const link = INCUBATOR_CONFIG.telegramAppUrl || `https://t.me/${INCUBATOR_CONFIG.botUsername}/form`;
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(link);
+                        setIsCopied(true);
+                        setTimeout(() => setIsCopied(false), 2500);
+                      }
+                    }}
+                    className="w-full py-3.5 px-4 rounded-2xl bg-slate-100 text-slate-700 font-semibold text-xs hover:bg-slate-200 active:scale-[0.98] transition-all flex items-center justify-center space-x-2 cursor-pointer"
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check className="w-4 h-4 text-emerald-600" />
+                        <span className="text-emerald-700 font-medium">{t.telegramGate.copied}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>{t.telegramGate.copyBtn}</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            ) : !isSubmitted ? (
               <motion.div
                 key={currentStep?.id || 'step'}
                 initial={{ opacity: 0, x: 14 }}
@@ -1323,7 +1445,7 @@ export default function App() {
         </div>
 
         {/* Bottom Persistent Action Bar */}
-        {!isSubmitted && (
+        {!isSubmitted && !isBlockedOutsideTelegram && (
           <footer className="sticky bottom-0 z-20 backdrop-blur-xl bg-white/95 border-t border-slate-200/70 p-4">
             <button
               id="main-action-btn"

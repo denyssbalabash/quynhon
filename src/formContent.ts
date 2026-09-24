@@ -102,6 +102,15 @@ export interface FormTextConfig {
     general: string;
     retry: string;
   };
+  telegramGate: {
+    badge: string;
+    title: string;
+    subtitle: string;
+    instructions: string;
+    openBtn: string;
+    copyBtn: string;
+    copied: string;
+  };
 }
 
 export type SupportedLanguage = 'en' | 'vn';
@@ -251,6 +260,15 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
       general: 'Unable to deliver your application. Please check your connection or try again.',
       retry: 'Retry Submission',
     },
+    telegramGate: {
+      badge: 'Telegram Only',
+      title: 'Open in Telegram',
+      subtitle: 'This incubator intake form is secured and operates exclusively inside Telegram Mini Apps.',
+      instructions: 'To prevent automated spam and protect your application, please open this form through our official Telegram bot.',
+      openBtn: 'Open in Telegram',
+      copyBtn: 'Copy Bot Link',
+      copied: 'Link copied!',
+    },
   },
 
   // =========================================================================
@@ -396,6 +414,15 @@ export const FORM_CONTENT_CONFIG: Record<SupportedLanguage, FormTextConfig> = {
     error: {
       general: 'Không thể gửi hồ sơ. Vui lòng kiểm tra kết nối mạng và thử lại.',
       retry: 'Thử gửi lại',
+    },
+    telegramGate: {
+      badge: 'Chỉ Dành Cho Telegram',
+      title: 'Mở Trong Telegram',
+      subtitle: 'Biểu mẫu nộp hồ sơ này được bảo mật và chỉ hoạt động bên trong Telegram Mini App.',
+      instructions: 'Để ngăn chặn bot tự động và bảo vệ dữ liệu hồ sơ của bạn, vui lòng mở biểu mẫu này thông qua bot Telegram chính thức.',
+      openBtn: 'Mở trong Telegram',
+      copyBtn: 'Sao chép liên kết Bot',
+      copied: 'Đã sao chép liên kết!',
     },
   },
 };

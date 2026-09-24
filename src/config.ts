@@ -17,17 +17,26 @@ export const INCUBATOR_CONFIG = {
   // Целевой email для уведомлений
   notifyEmail: 'hello@vuonqn.site',
 
-  // Настройки Telegram бота (если у вас нет своего бэкенда/сервера и всё крутится на GitHub Pages):
-  // Укажите токен бота и chat ID вашего канала/админа прямо здесь или через VITE_ переменные:
-  // Если указаны botToken и adminChatId, форма напрямую отправит красивый отчет в Telegram из браузера!
+  // Настройки Telegram бота:
+  // ВНИМАНИЕ: Для максимальной безопасности токен бота НЕ должен храниться в открытом JS коде.
+  // Используйте VITE_TELEGRAM_BOT_TOKEN для локальных тестов или бессерверный endpoint (Cloudflare Worker / Google Script).
   telegram: {
-    botToken: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_BOT_TOKEN) || '8805681503:AAG0zo-_RoxfqPQ6-LMJscnJDOH8pYSOB4A',
+    botToken: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_BOT_TOKEN) || '',
     adminChatId: (typeof import.meta !== 'undefined' && import.meta.env?.VITE_TELEGRAM_ADMIN_CHAT_ID) || '-1003927235033',
   },
 
-  // URL бэкенда для отправки заявок (если используется сервер).
-  // Если telegram.botToken указан, форма отправит данные напрямую в Telegram даже без бэкенда.
-  apiEndpoint: '/api/submit',
+  // URL бессерверного прокси или бэкенда для отправки заявок (Google Script / Cloudflare Worker / server)
+  // Заявка безопасно отправляется через Google Apps Script без раскрытия токена в браузере.
+  apiEndpoint: 'https://script.google.com/macros/s/AKfycbyB8PPlQd0kPl-8bGYiLv0pM-0wTu3gOrcPHGaZkpnrfUQcAq3n6H1XmQE1DBMTgKSBfg/exec',
+
+  // Открывать ТОЛЬКО внутри Telegram (защита от случайных заходов ботов и людей из браузера)
+  requireTelegramApp: true,
+
+  // Юзернейм вашего бота в Telegram (без @)
+  botUsername: 'vuonqn_bot',
+
+  // Прямая ссылка на запуск приложения в Telegram Mini App
+  telegramAppUrl: 'https://t.me/vuonqn_bot/form',
 
   // Контакт поддержки
   supportTelegram: '@incubator_support',
